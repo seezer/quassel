@@ -21,6 +21,8 @@
 #include <QCoreApplication>
 
 #include "core.h"
+
+#include "command.h"
 #include "coreauthhandler.h"
 #include "coresession.h"
 #include "coresettings.h"
@@ -29,6 +31,7 @@
 #include "network.h"
 #include "postgresqlstorage.h"
 #include "quassel.h"
+#include "scheduler.h"
 #include "sqlitestorage.h"
 #include "util.h"
 
@@ -83,7 +86,8 @@ void Core::destroy()
 
 Core::Core()
     : QObject(),
-      _storage(0)
+      _storage(0),
+      _scheduler(0)
 {
 #ifdef HAVE_UMASK
     umask(S_IRWXG | S_IRWXO);
@@ -207,6 +211,17 @@ void Core::init()
         exit(0);
     }
 
+    if(Quassel::isOptionSet("enable-tasks"))
+    {
+        int maxThreads;
+#ifdef CORE_MAX_TASK_THREADS
+        maxThreads = CORE_MAX_TASK_THREADS;
+#else
+        // default is "1 per active user" - requires restart to adapt to new users
+        maxThreads = cs.coreState().toMap()["ActiveSessions"].toList().size();
+#endif
+        _scheduler = new Scheduler(maxThreads, this);
+    }
     connect(&_server, SIGNAL(newConnection()), this, SLOT(incomingConnection()));
     connect(&_v6server, SIGNAL(newConnection()), this, SLOT(incomingConnection()));
     if (!startListening()) exit(1);  // TODO make this less brutal
@@ -221,6 +236,10 @@ Core::~Core()
     // FIXME do we need more cleanup for handlers?
     foreach(CoreAuthHandler *handler, _connectingClients) {
         handler->deleteLater(); // disconnect non authed clients
+    }
+    if(_scheduler)
+    {
+        delete _scheduler;
     }
     qDeleteAll(sessions);
     qDeleteAll(_storageBackends);
@@ -414,6 +433,16 @@ bool Core::createNetwork(UserId user, NetworkInfo &info)
 
     info.networkId = networkId;
     return true;
+}
+
+void Core::scheduleCommand(Command *command)
+{
+    Scheduler *scheduler = instance()->_scheduler;
+    if(scheduler)
+    {
+        Task *task = scheduler->createTask(command);
+        scheduler->runTask(task);
+    }
 }
 
 

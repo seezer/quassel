@@ -36,6 +36,10 @@ set(SOURCES
     sqlitestorage.cpp
     storage.cpp
 
+    task.cpp
+    command.cpp
+    scheduler.cpp
+
     # needed for automoc
     coreeventmanager.h
 )

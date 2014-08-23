@@ -46,6 +46,8 @@ class CoreSession;
 struct NetworkInfo;
 class SessionThread;
 class SignalProxy;
+class Scheduler;
+class Command;
 
 class AbstractSqlMigrationReader;
 class AbstractSqlMigrationWriter;
@@ -481,6 +483,7 @@ public:
         return instance()->_storage->bufferMarkerLineMsgIds(user);
     }
 
+    static void scheduleCommand(Command *command);
 
     static inline QDateTime startTime() { return instance()->_startTime; }
     static inline bool isConfigured() { return instance()->_configured; }
@@ -564,6 +567,8 @@ private:
     QDateTime _startTime;
 
     bool _configured;
+
+    Scheduler *_scheduler;
 
     static AbstractSqlMigrationReader *getMigrationReader(Storage *storage);
     static AbstractSqlMigrationWriter *getMigrationWriter(Storage *storage);

@@ -196,6 +196,11 @@ void CoreSession::saveSessionState() const
     _networkConfig->save();
 }
 
+void CoreSession::scheduleCommand(Command *cmd)
+{
+    Core::scheduleCommand(cmd);
+}
+
 
 void CoreSession::restoreSessionState()
 {

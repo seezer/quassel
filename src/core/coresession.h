@@ -30,6 +30,7 @@
 #include "protocol.h"
 #include "message.h"
 #include "storage.h"
+#include "command.h"
 
 class CoreBacklogManager;
 class CoreBufferSyncer;
@@ -131,6 +132,8 @@ public slots:
 
     //! Marks us away (or unaway) on all networks
     void globalAway(const QString &msg = QString());
+
+    void scheduleCommand(Command *cmd);
 
 signals:
     void initialized();
